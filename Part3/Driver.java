@@ -4,52 +4,98 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.Arrays;
 import java.text.DecimalFormat;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 
 public class Driver
 {
   public static void main(String[] args)
   {
-    /*if(args.length != 1)
+    if(args.length != 2)
     {
       System.out.println("Incorrect arguments. Please run by \"java " +
-                         "Driver <numPoints>\"");
+                         "Driver <numPoints> <choice>\"");
       System.exit(-1);
-    }*/
+    }
+
+    double r = Double.parseDouble(args[0]);
+
 
     int[] arr = {20, 50, 100, 200, 500, 1000, 2000, 3000};
 
+    int choice = Integer.parseInt(args[1]);
+    int numTrials = 250;
+    int numPoints;
+
+
     for(int i = 0; i < arr.length; i++)
     {
-      int numPoints = arr[i];
+      double mean = 0;
+      int[] iterated = new int[numTrials];
+      double stdDev = 0.0; 
+      numPoints = arr[i];
 
-      int iterations = 0;
 
-      Point[] p = new Point[0];
-    
-      PointSet ps = PointSet.createRandomPointSet(numPoints);
-    
-      Stack<Point> hull;
-      ArrayList<Point> points;
-
-      while(ps.size() != 0)
+      for(int j = 0; j < numTrials; j++)
       {
-        iterations++;
 
-        hull = PointSet.convexHull(ps);
+        int iterations = 0;
+
+        Point[] p = new Point[0];
       
-        points = new ArrayList<Point>(Arrays.asList(ps.getPointSet()));
+        PointSet ps = PointSet.createRandomPointSet(numPoints, r);
+      
+        Stack<Point> hull;
+        ArrayList<Point> points;
 
-        Iterator<Point> it = hull.iterator();
+        while(ps.size() != 0)
+        {
+          iterations++;
 
-        while(it.hasNext())
-          points.remove(it.next());
-  
-        ps = new PointSet(points.toArray(p));
+          hull = PointSet.convexHull(ps);
+        
+          points = new ArrayList<Point>(Arrays.asList(ps.getPointSet()));
+
+          Iterator<Point> it = hull.iterator();
+
+          while(it.hasNext())
+            points.remove(it.next());
+    
+          ps = new PointSet(points.toArray(p));
+        }
+
+        mean += iterations;
+        iterated[i] = iterations;
       }
 
-      System.out.println(arr[i] + "\t" + iterations);
+      mean /= numTrials;
+
+      for(int j = 0; j < numTrials; j++)
+        stdDev += Math.pow(iterated[i] - mean, 2);
+
+      stdDev /= numTrials;
+      stdDev = Math.sqrt(stdDev);
+
+      switch(choice)
+      {
+        case 1: System.out.println(numPoints + "\t" + mean);
+                break;
+
+        case 2: System.out.println(numPoints + "\t" + stdDev);
+                break;
+      }
     }
   }
+
+  public static double round(double value, int places)
+  {
+    if (places < 0) throw new IllegalArgumentException();
+
+    BigDecimal bd = new BigDecimal(value);
+    bd = bd.setScale(places, RoundingMode.HALF_UP);
+    return bd.doubleValue();
+  }
+
 }
 
 
@@ -95,7 +141,7 @@ class PointSet
     return s;
   }
 
-  public static PointSet createRandomPointSet(int n)
+  public static PointSet createRandomPointSet(int n, double l)
   {
     PointSet ps = new PointSet(n);
     
@@ -104,9 +150,10 @@ class PointSet
     for(int i = 0; i < n; i++)
     {
       t = 2 * Math.PI * Math.random();
-      r = Math.random() + Math.random();
 
+      r = Math.random() + Math.random();
       r = r > 1 ? (2-r) : r;
+      r = r*(1-l)+l;
 
       ps.pointset[i] = new Point(r * Math.cos(t), r * Math.sin(t));
     }
